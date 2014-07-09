@@ -6,7 +6,7 @@ license that can be found in the LICENSE file.
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="codemirror-import.html">
 
-<polymer-element name="code-mirror" attributes="value mode theme tabSize lineNumbers">
+<polymer-element name="code-mirror" attributes="value mode theme tabSize lineNumbers lineWrapping readOnly">
   <template>
     <link rel="stylesheet" href="codemirror-4.0/lib/codemirror.css">
     <link href="codemirror-4.0/theme/ambiance.css" rel="stylesheet">
@@ -48,8 +48,10 @@ license that can be found in the LICENSE file.
       value: '',
       mode: 'htmlmixed',
       theme: 'xq-light',
+      readOnly: false,
       tabSize: 2,
       lineNumbers: true,
+      lineWrapping: false,
       ready: function() {
         if (!this.value) {
           this.value = this.textContent;
@@ -63,12 +65,23 @@ license that can be found in the LICENSE file.
           foldGutter: true,
           gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"]
         });
+        this.mirror.on('changes', this.editorChanged.bind(this));
       },
       refresh: function() {
         this.mirror.refresh();
       },
       valueChanged: function() {
-        this.mirror.setValue(this.value);
+        if (this.value !== this.mirror.getValue()) {
+          // don't set a null value, as codemirror errors
+          this.mirror.setValue(this.value || "");
+        }
+        this.refresh();
+      },
+      get editorValue() {
+        return this.mirror ? this.mirror.getValue() : this.value;
+      },
+      editorChanged: function(_, changes) {
+        this.fire('change', {value: this.editorValue, changes: changes});
       },
       modeChanged: function() {
         this.mirror.setOption('mode', this.mode);
@@ -81,6 +94,12 @@ license that can be found in the LICENSE file.
       },
       lineNumbersChanged: function() {
         this.mirror.setOption('lineNumbers', this.lineNumbers);
+      },
+      lineWrappingChanged: function() {
+        this.mirror.setOption('lineWrapping', this.lineWrapping);
+      },
+      readOnlyChanged: function() {
+        this.mirror.setOption('readOnly', this.readOnly);
       },
       focus: function() {
         this.mirror.focus();
